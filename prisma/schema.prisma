@@ -1,0 +1,266 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model book {
+  id            Int            @id @default(autoincrement())
+  isbn          String?        @db.Char(13)
+  title         String         @db.VarChar(100)
+  publisher     String         @db.VarChar(100)
+  edition_year  Int?           @db.Year
+  description   String         @db.VarChar(1000)
+  img_id        String         @db.VarChar(255)
+  price         Float          @db.Float
+  creation_date DateTime       @default(now()) @db.DateTime(0)
+  status        Int
+  confirmed     Boolean        @default(false)
+  closing_date  DateTime?      @db.DateTime(0)
+  idUser        Int
+  idBuyer       Int?
+  slug          String         @unique(map: "slug") @db.VarChar(100)
+  category      Categoria?     @default(altro)
+  update_date   DateTime       @default(now()) @updatedAt @db.DateTime(0)
+  user          user           @relation(fields: [idUser], references: [id], onUpdate: Restrict, map: "owns")
+  comment_book  comment_book[]
+  like_book     like_book[]
+  visual_book   visual_book[]
+
+  @@index([idUser], map: "owns")
+}
+
+model request_book {
+  id            String   @id @default(uuid())
+  title         String   @db.VarChar(100)
+  slug          String   @unique(map: "slug") @db.VarChar(100)
+  isbn          String   @db.Char(13)
+  maxPrice      Float    @db.Float
+  creation_date DateTime @default(now()) @db.DateTime(0)
+  idUser        Int
+  description   String   @db.VarChar(1000)
+  user          user     @relation(fields: [idUser], references: [id], onUpdate: Restrict, map: "request")
+
+  @@index([idUser], map: "request")
+}
+
+model chat {
+  id                      String    @id @default(uuid())
+  creation_date           DateTime  @default(now()) @db.DateTime(0)
+  idUser1                 Int
+  idUser2                 Int
+  last_message_date       DateTime  @default(now()) @db.DateTime(0)
+  user_chat_idUser1Touser user      @relation("chat_idUser1Touser", fields: [idUser1], references: [id], onDelete: Cascade, map: "chat_in1")
+  user_chat_idUser2Touser user      @relation("chat_idUser2Touser", fields: [idUser2], references: [id], onDelete: Cascade, map: "chat_in2")
+  message                 message[]
+
+  @@index([idUser1], map: "chat_in1")
+  @@index([idUser2], map: "chat_in2")
+}
+
+model message {
+  id             String   @id @default(uuid())
+  content_text   String?  @db.Text
+  content_image  String?  @db.VarChar(255)
+  idUser         Int
+  idChat         String
+  creation_date  DateTime @default(now()) @db.DateTime(0)
+  reference_slug String?  @db.VarChar(100)
+  seen           Boolean  @default(false)
+  chat           chat     @relation(fields: [idChat], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "contains")
+  user           user     @relation(fields: [idUser], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "write")
+
+  @@index([idChat], map: "contains")
+  @@index([idUser], map: "write")
+}
+
+model user {
+  id                      Int                 @id @default(autoincrement())
+  username                String              @unique(map: "username") @db.VarChar(32)
+  password                String?             @db.Char(32)
+  img_id                  String?             @db.VarChar(100)
+  email                   String              @unique(map: "email") @db.VarChar(32)
+  name                    String              @db.VarChar(32)
+  surname                 String              @db.VarChar(32)
+  city                    String?             @db.VarChar(50)
+  provider                Provider            @default(credentials)
+  idGoogle                String?             @unique(map: "idGoogle") @db.VarChar(32)
+  creation_date           DateTime            @default(now()) @db.DateTime(0)
+  verified                Boolean             @default(false)
+  verificationId          Int?                @unique(map: "verificationId") @db.UnsignedInt
+  bio                     String?             @db.VarChar(300)
+  lastTimeOnline          DateTime?           @db.DateTime(0)
+  book                    book[]
+  chat_chat_idUser1Touser chat[]              @relation("chat_idUser1Touser")
+  chat_chat_idUser2Touser chat[]              @relation("chat_idUser2Touser")
+  comment_book            comment_book[]
+  like_book               like_book[]
+  message                 message[]
+  report                  report[]
+  request_book            request_book[]
+  search_history          search_history[]
+  verification_info       verification_info?  @relation(fields: [verificationId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "verificationVincolo")
+  user_preferences        user_preferences?
+  commentiCheHaFatto      comment_user[]      @relation("comment_user_author")
+  commentiCheHaRicevuto   comment_user[]      @relation("comment_user_user")
+  like_commenti           like_comment_user[]
+}
+
+model information {
+  id            Int      @id @default(autoincrement()) @db.UnsignedInt
+  ip            String   @db.VarChar(32)
+  browser       String   @db.VarChar(200)
+  url           String   @db.VarChar(200)
+  creation_date DateTime @default(now()) @db.DateTime(0)
+}
+
+model comment_book {
+  id                Int      @id @default(autoincrement()) @db.UnsignedInt
+  text              String   @db.VarChar(1000)
+  idUser            Int
+  idBook            Int
+  creation_date     DateTime @default(now()) @db.DateTime(0)
+  answer_to_message Int      @db.UnsignedInt
+  book              book     @relation(fields: [idBook], references: [id], onDelete: Cascade, map: "relazione_libro3")
+  user              user     @relation(fields: [idUser], references: [id], onDelete: Cascade, map: "relazione_utente3")
+
+  @@index([idBook], map: "relazione_libro3")
+  @@index([idUser], map: "relazione_utente3")
+}
+
+model comment_user {
+  id            String   @id @default(cuid())
+  text          String   @db.VarChar(1000)
+  creation_date DateTime @default(now()) @db.DateTime(0)
+  authorId      Int
+  author        user     @relation("comment_user_author", fields: [authorId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "relazione_utente1")
+  userId        Int
+  user          user     @relation("comment_user_user", fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "relazione_utente2")
+
+  replyToId String?
+  replyTo   comment_user?  @relation("comment_user_reply", fields: [replyToId], references: [id], onDelete: Cascade, onUpdate: NoAction, map: "relazione_commento")
+  replies   comment_user[] @relation("comment_user_reply")
+
+  likes like_comment_user[]
+}
+
+model like_comment_user {
+  id        Int          @id @default(autoincrement()) @db.UnsignedInt
+  idUser    Int
+  idComment String
+  datetime  DateTime     @default(now()) @db.DateTime(0)
+  comment   comment_user @relation(fields: [idComment], references: [id], onDelete: Cascade, map: "relazione_commento2")
+  user      user         @relation(fields: [idUser], references: [id], onDelete: Cascade, map: "relazione_utente5")
+
+  @@unique([idUser, idComment], map: "idUser")
+  @@index([idComment], map: "relazione_commento2")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model like_book {
+  id       Int      @id @default(autoincrement()) @db.UnsignedInt
+  idUser   Int
+  idBook   Int
+  datetime DateTime @default(now()) @db.DateTime(0)
+  book     book     @relation(fields: [idBook], references: [id], onDelete: Cascade, map: "relazione_libro")
+  user     user     @relation(fields: [idUser], references: [id], onDelete: Cascade, map: "relazione_utente")
+
+  @@unique([idUser, idBook], map: "idUser")
+  @@index([idBook], map: "relazione_libro")
+}
+
+/// This model or at least one of its fields has comments in the database, and requires an additional setup for migrations: Read more: https://pris.ly/d/database-comments
+model visual_book {
+  id        Int      @id @default(autoincrement()) @db.UnsignedInt
+  emailOrIp String
+  idBook    Int
+  datetime  DateTime @default(now()) @db.DateTime(0)
+  book      book     @relation(fields: [idBook], references: [id], onDelete: Cascade, map: "relazione_libro2")
+
+  @@unique([emailOrIp, idBook], map: "emailOrIp")
+  @@index([idBook], map: "relazione_libro2")
+}
+
+model search_history {
+  id           Int      @id @default(autoincrement()) @db.UnsignedInt
+  idUser       Int?
+  query        String   @db.VarChar(200)
+  whenSearched DateTime @db.DateTime(0)
+  user         user?    @relation(fields: [idUser], references: [id], onDelete: Cascade, map: "relazione_history_user")
+
+  @@index([idUser], map: "relazione_history_user")
+}
+
+model website_views {
+  id       Int      @id @default(autoincrement()) @db.UnsignedInt
+  datetime DateTime @default(now()) @db.DateTime(0)
+}
+
+model cities {
+  id   Int    @id @default(autoincrement()) @db.UnsignedInt
+  name String @unique(map: "name") @db.VarChar(70)
+  lat  Float
+  lon  Float
+}
+
+model verification_info {
+  id         Int       @id @default(autoincrement()) @db.UnsignedInt
+  token      String    @db.VarChar(64)
+  createdAt  DateTime  @default(now()) @db.DateTime(0)
+  verifiedAt DateTime? @db.DateTime(0)
+  user       user?
+}
+
+model report {
+  id                  Int      @id @default(autoincrement()) @db.UnsignedInt
+  usernameReported    String?  @db.VarChar(32)
+  idUserWhoMadeReport Int
+  slugReported        String?  @db.VarChar(100)
+  message             String   @db.VarChar(500)
+  createdAt           DateTime @default(now()) @db.DateTime(0)
+  user                user     @relation(fields: [idUserWhoMadeReport], references: [id], onDelete: Cascade, map: "relazione_utente4")
+
+  @@index([idUserWhoMadeReport], map: "relazione_utente4")
+}
+
+model user_preferences {
+  id                           Int     @id @default(autoincrement()) @db.UnsignedInt
+  idUser                       Int     @unique(map: "idUser")
+  wantOthersSeeLastLogin       Boolean @default(true)
+  wantOthersSeeLastMessageDate Boolean @default(true)
+  wantOthersSeeCity            Boolean @default(true)
+  user                         user    @relation(fields: [idUser], references: [id], onDelete: NoAction, onUpdate: NoAction, map: "collegamentoiduser")
+}
+
+enum Provider {
+  credentials
+  google
+}
+
+enum Categoria {
+  altro
+  scuola
+  romanzi
+  fantasy
+  science_fiction
+  mistero_e_suspense
+  gialli_e_thriller
+  storia
+  biografie
+  saggistica
+  autoaiuto_e_sviluppo_personale
+  psicologia
+  filosofia
+  scienza_e_tecnologia
+  arte_e_fotografia
+  musica
+  viaggi_e_avventure
+  letteratura_classica
+  poesia
+  teatro
+  libri_per_bambini
+  libri_di_cucina_e_gastronomia
+}
