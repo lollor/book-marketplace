@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
+import Providers from "@/components/providers";
+import { Navbar } from "@/components/navbar";
 
 const inter = Inter({ subsets: ["latin"] });
 
@@ -22,9 +24,12 @@ export default function RootLayout({
    return (
       <html lang="it">
          <body className={cn(inter.className, "bg-background")}>
-            <div className="py-3 px-[20px]">
-               {children}
-            </div>       
+            <Providers>
+               <Navbar />
+               <div className="py-3 px-[20px]">
+                  {children}
+               </div>
+            </Providers>
          </body>
       </html>
    );

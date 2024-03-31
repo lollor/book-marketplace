@@ -11,3 +11,8 @@ export const User = z.object({
    img_id: z.string().trim().optional(),
    idGoogle: z.string().trim().optional(),
 });
+
+export const Login = z.object({
+   username: z.string().trim(),
+   password: z.string().trim()
+})
